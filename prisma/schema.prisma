@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -19,48 +13,48 @@ model User {
   email          String     @unique @db.VarChar(255)
   username       String     @db.VarChar(255)
   password       String     @db.VarChar(255)
-  bio            String?    @db.Text
+  bio            String?
   image          String?    @db.VarChar(255)
   imageId        String?    @db.VarChar(255)
-  followingCount Int        @default(0) @db.Integer
-  followerCount  Int        @default(0) @db.Integer
-  postCount      Int        @default(0) @db.Integer
+  followingCount Int        @default(0)
+  followerCount  Int        @default(0)
+  postCount      Int        @default(0)
   createAt       DateTime   @default(now())
-  posts          Post[]
-  comments       Comment[]
   bookmarks      Bookmark[]
+  comments       Comment[]
+  posts          Post[]
 }
 
 model Post {
   id           Int        @id @default(autoincrement())
   userId       Int
-  user         User       @relation(fields: [userId], references: [id])
   image        String?    @db.VarChar(255)
   imageId      String?    @db.VarChar(255)
-  caption      String?    @db.Text
-  commentCount Int        @default(0) @db.Integer
-  likeCount    Int        @default(0) @db.Integer
+  caption      String?
+  commentCount Int        @default(0)
+  likeCount    Int        @default(0)
   createAt     DateTime   @default(now())
-  comments     Comment[]
   bookmarks    Bookmark[]
+  comments     Comment[]
+  user         User       @relation(fields: [userId], references: [id])
 }
 
 model Comment {
   id       Int      @id @default(autoincrement())
   userId   Int
-  user     User     @relation(fields: [userId], references: [id])
   postId   Int
-  post     Post     @relation(fields: [postId], references: [id])
-  content  String   @db.Text
+  content  String
   createAt DateTime @default(now())
+  post     Post     @relation(fields: [postId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
 }
 
 model Bookmark {
   userId   Int
-  user     User     @relation(fields: [userId], references: [id])
   postId   Int
-  post     Post     @relation(fields: [postId], references: [id])
   createAt DateTime @default(now())
+  post     Post     @relation(fields: [postId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
 
   @@id([userId, postId])
 }
