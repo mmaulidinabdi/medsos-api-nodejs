@@ -1,6 +1,7 @@
 import * as z from "zod";
 import bcrypt from "bcrypt";
 import { prisma } from "../lib/prisma.js";
+import jwt from "jsonwebtoken";
 
 export const RegisterUser = async (req, res) => {
   try {
@@ -83,8 +84,72 @@ export const RegisterUser = async (req, res) => {
   }
 };
 
-export const LoginUser = (req, res) => {
-  res.json({
-    msg: "Login User",
-  });
+export const LoginUser = async (req, res) => {
+  try {
+    // validasi email dan password
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Email dan Password wajib diisi",
+      });
+    }
+
+    const existingUser = await prisma.user.findUnique({
+      where: {
+        email,
+      },
+    });
+
+    if (!existingUser) {
+      return res.status(404).json({
+        success: false,
+        message: "Email tidak terdaftar",
+      });
+    }
+
+    // compare password req.body dengan database menggunakan bcrypt
+    const checkPassword = await bcrypt.compare(password, existingUser.password);
+    if (!checkPassword) {
+      return res.status(401).json({
+        success: false,
+        message: "Password tidak cocok",
+      });
+    }
+
+    // buat jwt dan simpan id user ke jwt
+    const token = jwt.sign({ id: existingUser.id }, process.env.JWT_SECRET, {
+      expiresIn: "2d",
+    });
+
+    // cookie
+    res.cookie("access_token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 2 * 24 * 60 * 60 * 1000, // 2 days
+    });
+
+    // res success
+    return res.status(200).json({
+      success: true,
+      message: "Login berhasil",
+      data: {
+        id: existingUser.id,
+        fullname: existingUser.fullname,
+        username: existingUser.username,
+        email: existingUser.email,
+        image: existingUser.image,
+        bio: existingUser.bio,
+      },
+      token,
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      success: false,
+      message: `Something went wrong on server: ${err}`,
+    });
+  }
 };
