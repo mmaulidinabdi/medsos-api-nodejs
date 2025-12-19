@@ -1,4 +1,6 @@
+import { log } from "console";
 import { prisma } from "../lib/prisma.js";
+import * as z from "zod";
 
 export const getUserByUsername = async (req, res) => {
   const { username } = req.params;
@@ -42,12 +44,12 @@ export const searchUser = async (req, res) => {
           contains: username,
         },
       },
-        select: {
-          id: true,
-          username: true,
-          fullname: true,
-          image: true,
-        },
+      select: {
+        id: true,
+        username: true,
+        fullname: true,
+        image: true,
+      },
     });
 
     if (users.length === 0) {
@@ -60,9 +62,75 @@ export const searchUser = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Hasil pencarian username berhasil",
-      data: users
+      data: users,
     });
   } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: `Something went wrong on server: ${err}`,
+    });
+  }
+};
+
+export const updateUser = async (req, res) => {
+  try {
+    // validasi data yg diterima dari req.body
+    const dataToUpdate = z.object({
+      fullname: z.string().min(8, "Fullname minimal 8 karakter"),
+      username: z.string().min(8, "Username minimal 8 karakter"),
+      bio: z.string(),
+    });
+
+    const validate = dataToUpdate.parse(req.body);
+
+    console.log("isi data yg sudah tervalidasi ", validate);
+
+    // cek data username harus unique
+    const uniqueUsername = await prisma.user.findUnique({
+      where: {
+        username: validate.username,
+      },
+    });
+
+    console.log("isi unique username", uniqueUsername);
+
+    if (uniqueUsername && uniqueUsername.id !== req.user.id) {
+      return res.status(400).json({
+        success: false,
+        message: "Username tidak bisa digunakan",
+      });
+    }
+
+    // update data ke db
+    const newData = await prisma.user.update({
+      where: {
+        id: req.user.id,
+      },
+      data: {
+        fullname: validate.fullname,
+        username: validate.username,
+        bio: validate.bio,
+      },
+      omit: {
+        password: true,
+      },
+    });
+    console.log("isi new data", newData);
+
+    // response
+    return res.status(201).json({
+      success: true,
+      message: "Update user berhasil",
+      data: newData,
+    });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      const errors = err.issues.map((e) => e.message);
+      return res.status(400).json({
+        success: false,
+        errors: errors,
+      });
+    }
     return res.status(500).json({
       success: false,
       message: `Something went wrong on server: ${err}`,

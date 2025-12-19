@@ -15,7 +15,7 @@ export const AuthMiddleware = async (req, res, next) => {
 
     // index 0 = Bearer, index 1 = tokennya
     const token = header.split("Bearer ")[1];
-    console.log(token);
+    // console.log(token);
     const decoded = jwt.verify(token, jwtSecret);
 
     const currentUser = await prisma.user.findUnique({
@@ -35,7 +35,7 @@ export const AuthMiddleware = async (req, res, next) => {
     };
 
     next();
-    
+
   } catch (err) {
     return res.status(500).json({
       success: false,
