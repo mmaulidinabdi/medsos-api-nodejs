@@ -1,5 +1,6 @@
 import express from "express";
 import AuthRouter from "./routes/auth.route.js";
+import UserRouter from "./routes/user.route.js";
 
 const app = express();
 const port = 3001;
@@ -11,6 +12,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/auth", AuthRouter);
+app.use("/api/user",UserRouter);
 
 app.listen(port, () => {
   console.log(`berjalan d http://localhost:${port}`);
