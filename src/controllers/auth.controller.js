@@ -124,12 +124,12 @@ export const LoginUser = async (req, res) => {
     });
 
     // cookie
-    res.cookie("access_token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 2 * 24 * 60 * 60 * 1000, // 2 days
-    });
+    // res.cookie("access_token", token, {
+    //   httpOnly: true,
+    //   secure: process.env.NODE_ENV === "production",
+    //   sameSite: "strict",
+    //   maxAge: 2 * 24 * 60 * 60 * 1000, // 2 days
+    // });
 
     // res success
     return res.status(200).json({
@@ -153,3 +153,11 @@ export const LoginUser = async (req, res) => {
     });
   }
 };
+
+export const getUser = async(req,res)=>{
+  res.status(200).json({
+    success:true,
+    message:"Get current user berhasil",
+    data: req.user
+  })
+}
