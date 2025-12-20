@@ -1,6 +1,7 @@
-import { log } from "console";
 import { prisma } from "../lib/prisma.js";
 import * as z from "zod";
+import supabase from "../lib/supabase.js";
+import { randomUUID } from "crypto";
 
 export const getUserByUsername = async (req, res) => {
   const { username } = req.params;
@@ -131,6 +132,81 @@ export const updateUser = async (req, res) => {
         errors: errors,
       });
     }
+    return res.status(500).json({
+      success: false,
+      message: `Something went wrong on server: ${err}`,
+    });
+  }
+};
+
+export const updateAvatar = async (req, res) => {
+  try {
+    // validasi file
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "File belum di upload",
+      });
+    }
+
+    // get current user dengan req.user.id
+    const currentUser = await prisma.user.findUnique({
+      where: {
+        id: req.user.id,
+      },
+    });
+
+    // validasi ke 2 untuk hapus gambar avatar yg lama
+    if (currentUser.imageId) {
+      await supabase.storage.from("avatar").remove([currentUser.imageId]);
+    }
+
+    // 4. generate nama file (AMAN)
+    const ext = req.file.mimetype === "image/png" ? "png" : "jpg";
+    const fileName = `${randomUUID()}.${ext}`;
+
+    // 5. upload ke Supabase
+    const { error: uploadError } = await supabase.storage
+      .from("avatar")
+      .upload(fileName, req.file.buffer, {
+        contentType: req.file.mimetype,
+        upsert: true,
+      });
+
+    if (uploadError) {
+      return res.status(400).json({
+        success: false,
+        message: uploadError.message,
+      });
+    }
+
+    // 6. ambil public url
+    const { data } = supabase.storage
+      .from("avatar")
+      .getPublicUrl(fileName);
+
+    // 7. update DB
+    const newData = await prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        image: data.publicUrl,
+        imageId: fileName,
+      },
+      omit:{
+        password:true
+      }
+    });
+
+    // 8. response
+    return res.json({
+      success: true,
+      message: "Avatar berhasil diupdate",
+      data: newData,
+    });
+
+    
+  } catch (err) {
+    console.log(err);
     return res.status(500).json({
       success: false,
       message: `Something went wrong on server: ${err}`,

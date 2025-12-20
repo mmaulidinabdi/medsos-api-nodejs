@@ -13,10 +13,11 @@ export const AuthMiddleware = async (req, res, next) => {
       });
     }
 
-    // index 0 = Bearer, index 1 = tokennya
+    // index 0 = Bearer, index 1 = tokennya  Bearer 6tgvgy
     const token = header.split("Bearer ")[1];
     // console.log(token);
     const decoded = jwt.verify(token, jwtSecret);
+    console.log(`isi dari decoded: ${JSON.stringify(decoded)}`);
 
     const currentUser = await prisma.user.findUnique({
       where: {

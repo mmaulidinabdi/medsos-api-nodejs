@@ -1,6 +1,7 @@
 import express from "express";
 import AuthRouter from "./routes/auth.route.js";
 import UserRouter from "./routes/user.route.js";
+import supabase from "./lib/supabase.js";
 
 const app = express();
 const port = 3001;
@@ -12,7 +13,24 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/auth", AuthRouter);
-app.use("/api/user",UserRouter);
+app.use("/api/user", UserRouter);
+
+// test koneksi supabase client
+app.get("/supabase-storage-test", async (req, res) => {
+  const { data, error } = await supabase.storage.listBuckets();
+
+  if (error) {
+    return res.status(500).json({
+      status: "FAILED",
+      error: error.message,
+    });
+  }
+
+  res.json({
+    status: "OK",
+    buckets: data.map((b) => b.name),
+  });
+});
 
 app.listen(port, () => {
   console.log(`berjalan d http://localhost:${port}`);
