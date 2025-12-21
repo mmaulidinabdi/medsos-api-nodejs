@@ -1,6 +1,7 @@
 import express from "express";
 import AuthRouter from "./routes/auth.route.js";
 import UserRouter from "./routes/user.route.js";
+import FollowRouter from "./routes/follow.route.js";
 import supabase from "./lib/supabase.js";
 
 const app = express();
@@ -14,6 +15,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/auth", AuthRouter);
 app.use("/api/user", UserRouter);
+app.use("/api/follow",FollowRouter);
 
 // test koneksi supabase client
 app.get("/supabase-storage-test", async (req, res) => {

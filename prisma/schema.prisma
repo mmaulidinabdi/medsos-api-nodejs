@@ -21,6 +21,8 @@ model User {
   createAt       DateTime   @default(now())
   bookmarks      Bookmark[]
   comments       Comment[]
+  followers      Follow[]   @relation("follower_relation")
+  followings     Follow[]   @relation("following_relation")
   posts          Post[]
 }
 
@@ -56,4 +58,14 @@ model Bookmark {
   user     User     @relation(fields: [userId], references: [id])
 
   @@id([userId, postId])
+}
+
+model Follow {
+  followerId  Int
+  followingId Int
+  createAt    DateTime @default(now())
+  follower    User     @relation("follower_relation", fields: [followerId], references: [id])
+  following   User     @relation("following_relation", fields: [followingId], references: [id])
+
+  @@id([followerId, followingId])
 }
