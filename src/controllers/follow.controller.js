@@ -5,19 +5,19 @@ export const followUserAccount = async (req, res) => {
   const currentUserId = req.user.id;
 
   // data user yang di follow/unfollow
-  const { followUserId } = req.body;
+  const followUserId = Number(req.body.followUserId);
 
   // cek apakah curren user == follow user
   if (currentUserId === followUserId) {
     return res.status(400).json({
       success: false,
-      message: "Anda tidak bisa follow/unfollow diri sendiri",
+      message: "Anda tidak bisa follow diri sendiri",
     });
   }
 
   const otherUser = await prisma.user.findUnique({
     where: {
-      id: Number(followUserId),
+      id: followUserId,
     },
   });
 
@@ -31,8 +31,8 @@ export const followUserAccount = async (req, res) => {
   const isFollowUser = await prisma.follow.findUnique({
     where: {
       followerId_followingId: {
-        followingId: Number(currentUserId),
-        followerId: Number(followUserId),
+        followerId: currentUserId,
+        followingId: followUserId,
       },
     },
   });
@@ -47,8 +47,8 @@ export const followUserAccount = async (req, res) => {
   try {
     const follow = await prisma.follow.create({
       data: {
-        followerId: Number(followUserId),
-        followingId: Number(currentUserId),
+        followerId: currentUserId,
+        followingId: followUserId,
       },
     });
 
@@ -79,6 +79,103 @@ export const followUserAccount = async (req, res) => {
       success: true,
       message: "Follow user berhasil",
       data: follow,
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      success: false,
+      message: `Something went wrong on server: ${err}`,
+    });
+  }
+};
+
+export const unfollowUserAccount = async (req, res) => {
+  // ambil data id yg ingin di unfollow
+  const { unfollowUserId } = req.params;
+  const unfollowId = Number(unfollowUserId);
+
+  // data currentUser
+  const currentUserId = req.user.id;
+
+  if (unfollowId === currentUserId) {
+    return res.status(400).json({
+      success: false,
+      message: "Tidak bisa unfollow diri sendiri",
+    });
+  }
+
+  // cek apakah user yg ingin di unfoll ada
+  const userUnfollow = await prisma.user.findUnique({
+    where: {
+      id: unfollowId,
+    },
+  });
+
+  if (!userUnfollow) {
+    return res.status(400).json({
+      success: false,
+      message: "User tidak ditemukan",
+    });
+  }
+
+  //   cek apakah sudah follow
+  const follow = await prisma.follow.findUnique({
+    where: {
+      followerId_followingId: {
+        followerId: currentUserId,
+        followingId: unfollowId,
+      },
+    },
+  });
+
+  if (!follow) {
+    return res.status(400).json({
+      success: false,
+      message: "Belum follow user ini",
+    });
+  }
+
+  try {
+    // mencoba best practice pakai transaction
+
+    await prisma.$transaction([
+      // hapus data  di follow table
+      prisma.follow.delete({
+        where: {
+          followerId_followingId: {
+            followerId: currentUserId,
+            followingId: unfollowId,
+          },
+        },
+      }),
+
+      // update count user following dan follower
+      prisma.user.update({
+        where: {
+          id: currentUserId,
+        },
+        data: {
+          followingCount: {
+            decrement: 1,
+          },
+        },
+      }),
+
+      prisma.user.update({
+        where: {
+          id: unfollowId,
+        },
+        data: {
+          followerCount: {
+            decrement: 1,
+          },
+        },
+      }),
+    ]);
+
+    res.status(201).json({
+      success: true,
+      message: "Unfollow user berhasil",
     });
   } catch (err) {
     console.log(err);
