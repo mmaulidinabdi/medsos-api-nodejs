@@ -185,3 +185,54 @@ export const unfollowUserAccount = async (req, res) => {
     });
   }
 };
+
+export const getRecommendationUser = async (req, res) => {
+  try {
+    const currentUser = req.user.id;
+
+    // ambil id user yg di follow oleh currentUser 
+    const followedUser = await prisma.follow.findMany({
+      where: {
+        followerId: currentUser,
+      },
+      select: {
+        followingId: true,
+      },
+    });
+    console.log(followedUser)
+
+    const followedIds = followedUser.map((f) => f.followingId);
+    console.log(followedIds);
+
+    const users = await prisma.user.findMany({
+      where: {
+        id: {
+          notIn: [...followedIds, currentUser],
+        },
+      },
+      select: {
+        id: true,
+        image: true,
+        fullname: true,
+        username: true,
+      },
+      take: 3,
+      orderBy: {
+        createAt: "desc",
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Rekomendasi user yang bisa di follow",
+      data: users,
+    });
+
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      success: false,
+      message: `Something went wrong on server: ${err}`,
+    });
+  }
+};
