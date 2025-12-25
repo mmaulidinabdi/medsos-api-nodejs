@@ -2,6 +2,8 @@ import { prisma } from "../lib/prisma.js";
 import * as z from "zod";
 import supabase from "../lib/supabase.js";
 import { randomUUID } from "crypto";
+import sharp from "sharp";
+
 
 export const getUserByUsername = async (req, res) => {
   const { username } = req.params;
@@ -141,7 +143,7 @@ export const updateUser = async (req, res) => {
 
 export const updateAvatar = async (req, res) => {
   try {
-    // validasi file
+    // 1. Validasi file
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -149,27 +151,35 @@ export const updateAvatar = async (req, res) => {
       });
     }
 
-    // get current user dengan req.user.id
+    // 2. Get current user
     const currentUser = await prisma.user.findUnique({
-      where: {
-        id: req.user.id,
-      },
+      where: { id: req.user.id },
     });
 
-    // validasi ke 2 untuk hapus gambar avatar yg lama
+    // 3. Proses Gambar dengan SHARP (Lakukan sebelum upload)
+    // Kita ubah ke .webp karena sizenya jauh lebih kecil tapi kualitas tajam
+    const optimizedBuffer = await sharp(req.file.buffer)
+      .rotate() // Memperbaiki rotasi otomatis dari metadata HP
+      .resize(400, 400, {
+        // Ukuran standar avatar 400x400
+        fit: "cover", // Memastikan gambar memenuhi area 1:1 (crop otomatis)
+        position: "center", // Bisa pakai 'entropy' untuk fokus ke objek utama
+      })
+      .webp({ quality: 80 }) // Kompresi ke webp kualitas 80%
+      .toBuffer();
+
+    const fileName = `${randomUUID()}.webp`;
+
+    // 4. Hapus gambar lama jika ada
     if (currentUser.imageId) {
       await supabase.storage.from("avatar").remove([currentUser.imageId]);
     }
 
-    // 4. generate nama file (AMAN)
-    const ext = req.file.mimetype === "image/png" ? "png" : "jpg";
-    const fileName = `${randomUUID()}.${ext}`;
-
-    // 5. upload ke Supabase
+    // 5. Upload buffer hasil Sharp ke Supabase
     const { error: uploadError } = await supabase.storage
       .from("avatar")
-      .upload(fileName, req.file.buffer, {
-        contentType: req.file.mimetype,
+      .upload(fileName, optimizedBuffer, {
+        contentType: "image/webp", // Konsisten dengan output Sharp
         upsert: true,
       });
 
@@ -180,36 +190,32 @@ export const updateAvatar = async (req, res) => {
       });
     }
 
-    // 6. ambil public url
-    const { data } = supabase.storage
-      .from("avatar")
-      .getPublicUrl(fileName);
+    // 6. Ambil public url
+    const { data } = supabase.storage.from("avatar").getPublicUrl(fileName);
 
-    // 7. update DB
+    // 7. Update DB
     const newData = await prisma.user.update({
       where: { id: req.user.id },
       data: {
         image: data.publicUrl,
         imageId: fileName,
       },
-      omit:{
-        password:true
-      }
+      omit: {
+        password: true,
+      },
     });
 
-    // 8. response
+    // 8. Response
     return res.json({
       success: true,
       message: "Avatar berhasil diupdate",
       data: newData,
     });
-
-    
   } catch (err) {
     console.log(err);
     return res.status(500).json({
       success: false,
-      message: `Something went wrong on server: ${err}`,
+      message: `Internal server error`,
     });
   }
 };
