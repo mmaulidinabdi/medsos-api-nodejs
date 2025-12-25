@@ -15,7 +15,7 @@ export const CreateFeed = async (req, res) => {
         message: "Caption harus diisi",
       });
     }
-    console.log(req.file);
+
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -25,9 +25,11 @@ export const CreateFeed = async (req, res) => {
 
     const optimizedBuffer = await sharp(req.file.buffer)
       .rotate() // Memperbaiki rotasi otomatis berdasarkan metadata EXIF (PENTING!)
-      .resize(1080, 1080, {
-        fit: "cover",
-        position: "entropy", // Mencari bagian terpenting gambar agar tidak terpotong sembarangan
+      .resize({
+        width: 1080, // Kunci lebar di 1080px sesuai standar IG
+        height: 1350, // Beri batas tinggi maksimal (Portrait IG)
+        fit: "inside", // JANGAN potong gambarnya
+        withoutEnlargement: true, // JANGAN paksa gambar kecil jadi besar
       })
       .webp({
         quality: 80,
@@ -37,7 +39,8 @@ export const CreateFeed = async (req, res) => {
 
     // generate nama file (AMAN)
     // const ext = req.file.mimetype === "image/png" ? "png" : "jpg";
-    const fileName = `${randomUUID()}.webp`;
+    const rawId = randomUUID();
+    const fileName = `${rawId}.webp`;
 
     //upload ke Supabase
     const { error: uploadError } = await supabase.storage
@@ -62,7 +65,7 @@ export const CreateFeed = async (req, res) => {
       data: {
         caption,
         image: data.publicUrl,
-        imageId: fileName,
+        imageId: rawId,
         userId: currentUser,
       },
     });
@@ -81,6 +84,79 @@ export const CreateFeed = async (req, res) => {
       success: true,
       message: "Feeds berhasil dibuat",
       data: newData,
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      success: false,
+      message: `Internal server error`,
+    });
+  }
+};
+
+export const ReadAllFeeds = async (req, res) => {
+  try {
+    const posts = await prisma.post.findMany({
+      include: {
+        user: {
+          select: {
+            id: true,
+            fullname: true,
+            username: true,
+            image: true,
+          },
+        },
+      },
+      orderBy: {
+        createAt: "desc",
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Get All Post",
+      data: posts,
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      success: false,
+      message: `Internal server error`,
+    });
+  }
+};
+
+export const detailFeeds = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const post = await prisma.post.findUnique({
+      where: {
+        id: Number(id),
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            fullname: true,
+            username: true,
+            image: true,
+          },
+        },
+      },
+    });
+
+    if (!post) {
+      return res.status(404).json({
+        success: false,
+        message: "Post tidak ditemukan",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Get detail Feed",
+      data: post,
     });
   } catch (err) {
     console.log(err);

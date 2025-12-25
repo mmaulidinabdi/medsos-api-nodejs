@@ -4,7 +4,6 @@ import supabase from "../lib/supabase.js";
 import { randomUUID } from "crypto";
 import sharp from "sharp";
 
-
 export const getUserByUsername = async (req, res) => {
   const { username } = req.params;
   try {
@@ -168,11 +167,14 @@ export const updateAvatar = async (req, res) => {
       .webp({ quality: 80 }) // Kompresi ke webp kualitas 80%
       .toBuffer();
 
-    const fileName = `${randomUUID()}.webp`;
+    const rawId = randomUUID();
+    const fileName = `${rawId}.webp`;
 
     // 4. Hapus gambar lama jika ada
     if (currentUser.imageId) {
-      await supabase.storage.from("avatar").remove([currentUser.imageId]);
+      await supabase.storage
+        .from("avatar")
+        .remove([`${currentUser.imageId}.webp`]);
     }
 
     // 5. Upload buffer hasil Sharp ke Supabase
@@ -198,7 +200,7 @@ export const updateAvatar = async (req, res) => {
       where: { id: req.user.id },
       data: {
         image: data.publicUrl,
-        imageId: fileName,
+        imageId: rawId,
       },
       omit: {
         password: true,
