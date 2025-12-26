@@ -166,3 +166,66 @@ export const detailFeeds = async (req, res) => {
     });
   }
 };
+
+export const deleteFeed = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const postData = await prisma.post.findUnique({
+      where: {
+        id: Number(id),
+      },
+    });
+
+    if (!postData) {
+      return res.status(404).json({
+        success: false,
+        message: "Feed tidak ditemukan",
+      });
+    }
+
+    if (postData.userId !== req.user.id) {
+      return res.status(400).json({
+        success: false,
+        message: "Anda tidak berhak menghapus feed ini",
+      });
+    }
+
+    // 3. Hapus gambar di Supabase Storage (dilakukan di luar transaksi DB)
+    if (postData.imageId) {
+      const { error: storageError } = await supabase.storage
+        .from("feed")
+        .remove([`${postData.imageId}.webp`]); // Supabase .remove butuh array []
+
+      if (storageError) {
+        return res.status(500).json({
+          success: false,
+          message: "Gagal menghapus file gambar, proses pembatalan...",
+        });
+      }
+    }
+
+    // 4. Jalankan Database Transaction
+    await prisma.$transaction([
+      prisma.post.delete({
+        where: { id: postData.id },
+      }),
+      prisma.user.update({
+        where: { id: req.user.id },
+        data: { postCount: { decrement: 1 } },
+      }),
+    ]);
+
+    // response
+    return res.status(200).json({
+      success: true,
+      message: "Feed berhasil dihapus",
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      success: false,
+      message: `Internal server error`,
+    });
+  }
+};
