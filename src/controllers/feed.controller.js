@@ -96,7 +96,35 @@ export const CreateFeed = async (req, res) => {
 
 export const ReadAllFeeds = async (req, res) => {
   try {
+    const currentUser = req.user.id;
+    const followings = await prisma.follow.findMany({
+      where: {
+        followerId: currentUser,
+      },
+      select: {
+        followingId: true,
+      },
+    });
+
+    // Query Request
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 3;
+    const skip = (page - 1) * limit;
+
+    const followingIds = followings.map((i) => i.followingId);
+
+
+    const totalFeed = await prisma.post.count({
+      where: {
+        userId: { in: [...followingIds, currentUser] },
+      },
+    });
+
+
     const posts = await prisma.post.findMany({
+      where: {
+        userId: { in: [...followingIds, currentUser] },
+      },
       include: {
         user: {
           select: {
@@ -110,11 +138,19 @@ export const ReadAllFeeds = async (req, res) => {
       orderBy: {
         createAt: "desc",
       },
+      skip: skip,
+      take: limit,
     });
+
+    const totalPages = Math.ceil(totalFeed / limit);
 
     return res.status(200).json({
       success: true,
       message: "Get All Post",
+      page,
+      limit,
+      totalPages,
+      totalFeed,
       data: posts,
     });
   } catch (err) {
@@ -142,6 +178,21 @@ export const detailFeeds = async (req, res) => {
             username: true,
             image: true,
           },
+        },
+        comments: {
+          select: {
+            content: true,
+            createAt: true,
+            user: {
+              select: {
+                id: true,
+                fullname: true,
+                username: true,
+                image: true,
+              },
+            },
+          },
+          orderBy: { createAt: "desc" },
         },
       },
     });
