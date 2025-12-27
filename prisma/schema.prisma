@@ -24,6 +24,7 @@ model User {
   followers      Follow[]   @relation("follower_relation")
   followings     Follow[]   @relation("following_relation")
   posts          Post[]
+  likes          Like[]
 }
 
 model Post {
@@ -38,6 +39,7 @@ model Post {
   bookmarks    Bookmark[]
   comments     Comment[]
   user         User       @relation(fields: [userId], references: [id])
+  likes        Like[]
 }
 
 model Comment {
@@ -46,16 +48,16 @@ model Comment {
   postId   Int
   content  String
   createAt DateTime @default(now())
-  post     Post     @relation(fields: [postId], references: [id])
-  user     User     @relation(fields: [userId], references: [id])
+  post     Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Bookmark {
   userId   Int
   postId   Int
   createAt DateTime @default(now())
-  post     Post     @relation(fields: [postId], references: [id])
-  user     User     @relation(fields: [userId], references: [id])
+  post     Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, postId])
 }
@@ -68,4 +70,14 @@ model Follow {
   following   User     @relation("following_relation", fields: [followingId], references: [id])
 
   @@id([followerId, followingId])
+}
+
+model Like {
+  userId   Int
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId   Int
+  post     Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createAt DateTime @default(now())
+
+  @@id([userId, postId])
 }

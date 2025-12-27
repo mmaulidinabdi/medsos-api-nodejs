@@ -9,37 +9,37 @@ async function main() {
         
       {
         fullname: "Ihsan Hanafi",
-        email: "ihsan23@mail.com",
+        email: "ihsan23@gmail.com",
         username: "ihsan2423",
         password,
       },
       {
         fullname: "Ahmad blblbb",
-        email: "ahmad@mail.com",
+        email: "ahmad@gmail.com",
         username: "ahmad123",
         password,
       },
       {
         fullname: "John Doe",
-        email: "john@mail.com",
+        email: "john@gmail.com",
         username: "johndoe",
         password,
       },
       {
         fullname: "Kira",
-        email: "Kira@mail.com",
+        email: "Kira@gmail.com",
         username: "kira",
         password,
       },
       {
         fullname: "Dio",
-        email: "Dio@mail.com",
+        email: "Dio@gmail.com",
         username: "Dio Brando",
         password,
       },
       {
         fullname: "Toruu",
-        email: "toruu@mail.com",
+        email: "toruu@gmail.com",
         username: "Toruu",
         password,
       },
