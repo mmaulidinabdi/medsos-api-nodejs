@@ -190,7 +190,7 @@ export const getRecommendationUser = async (req, res) => {
   try {
     const currentUser = req.user.id;
 
-    // ambil id user yg di follow oleh currentUser 
+    // ambil id user yg di follow oleh currentUser
     const followedUser = await prisma.follow.findMany({
       where: {
         followerId: currentUser,
@@ -199,7 +199,7 @@ export const getRecommendationUser = async (req, res) => {
         followingId: true,
       },
     });
-    console.log(followedUser)
+    console.log(followedUser);
 
     const followedIds = followedUser.map((f) => f.followingId);
     console.log(followedIds);
@@ -227,7 +227,53 @@ export const getRecommendationUser = async (req, res) => {
       message: "Rekomendasi user yang bisa di follow",
       data: users,
     });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      success: false,
+      message: `Something went wrong on server: ${err}`,
+    });
+  }
+};
 
+export const isFollowUser = async (req, res) => {
+  try {
+    const { followUserId } = req.params;
+    const currentUser = req.user.id;
+
+    const checkFollowUserId = await prisma.user.findUnique({
+      where: {
+        id: Number(followUserId),
+      },
+    });
+
+    if (!checkFollowUserId) {
+      return res.status(404).json({
+        success: false,
+        message: "User tidak ditemukan",
+      });
+    }
+
+    const isFollowUserData = await prisma.follow.findUnique({
+      where: {
+        followerId_followingId: {
+          followerId: currentUser,
+          followingId: checkFollowUserId.id,
+        },
+      },
+    });
+
+    if (isFollowUserData) {
+      return res.status(200).json({
+        success: true,
+        data: true,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: false,
+    });
   } catch (err) {
     console.log(err);
     return res.status(500).json({
