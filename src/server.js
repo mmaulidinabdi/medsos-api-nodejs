@@ -6,6 +6,7 @@ import supabase from "./lib/supabase.js";
 import FeedRouter from "./routes/feed.route.js";
 import CommentRouter from "./routes/comment.route.js";
 import LikeRouter from "./routes/likes.route.js";
+import BookmarkRouter from "./routes/bookmark.route.js";
 
 const app = express();
 const port = 3001;
@@ -22,6 +23,7 @@ app.use("/api/follow", FollowRouter);
 app.use("/api/feed", FeedRouter);
 app.use("/api/comment", CommentRouter);
 app.use("/api/like", LikeRouter);
+app.use("/api/bookmark",BookmarkRouter)
 
 // test koneksi supabase client
 app.get("/supabase-storage-test", async (req, res) => {
