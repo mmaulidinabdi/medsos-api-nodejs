@@ -19,12 +19,7 @@ export const ToggleBookmark = async (req, res) => {
     }
 
     const checkUserBookmark = await prisma.bookmark.findUnique({
-      where: {
-        userId_postId: {
-          userId: currentUser,
-          postId: post.id,
-        },
-      },
+      where: { userId_postId: { userId: currentUser, postId: post.id } },
     });
 
     if (checkUserBookmark) {
@@ -57,9 +52,36 @@ export const ToggleBookmark = async (req, res) => {
       message: "Berhasil menambahkan feed ke bookmark",
       data: newBookmark,
     });
-    
   } catch (err) {
     console.log(err);
+    return res.status(500).json({
+      success: false,
+      message: `Something went wrong on server: ${err}`,
+    });
+  }
+};
+
+export const CheckSaveFeed = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const currentUser = req.user.id;
+
+    const checkSaved = await prisma.bookmark.findUnique({
+      where: {
+        userId_postId: {
+          userId: currentUser,
+          postId: Number(postId),
+        },
+      },
+    });
+
+    if (checkSaved) {
+      return res.status(200).json({ data: true });
+    }
+
+    return res.status(200).json({ data: false });
+  } catch (err) {
+    console.err(err);
     return res.status(500).json({
       success: false,
       message: `Something went wrong on server: ${err}`,

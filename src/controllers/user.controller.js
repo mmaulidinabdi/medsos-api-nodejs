@@ -15,6 +15,24 @@ export const getUserByUsername = async (req, res) => {
         password: true,
         imageId: true,
       },
+      include: {
+        posts: {
+          omit: {
+            userId: true,
+            imageId: true,
+          },
+        },
+        bookmarks: {
+          include: {
+            post: {
+              omit: {
+                userId: true,
+                imageId: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!user) {
@@ -29,6 +47,7 @@ export const getUserByUsername = async (req, res) => {
       data: user,
     });
   } catch (err) {
+    console.error(err);
     return res.status(500).json({
       success: false,
       message: `Something went wrong on server: ${err}`,
@@ -133,6 +152,7 @@ export const updateUser = async (req, res) => {
         errors: errors,
       });
     }
+    console.error(err);
     return res.status(500).json({
       success: false,
       message: `Something went wrong on server: ${err}`,
