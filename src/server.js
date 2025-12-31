@@ -7,10 +7,12 @@ import FeedRouter from "./routes/feed.route.js";
 import CommentRouter from "./routes/comment.route.js";
 import LikeRouter from "./routes/likes.route.js";
 import BookmarkRouter from "./routes/bookmark.route.js";
+import cors from "cors";
 
 const app = express();
-const port = 3001;
+const port = process.env.PRODUCTION_PORT || 3001;
 
+app.use(cors());
 app.use(express.json());
 
 app.get("/", (req, res) => {
@@ -23,7 +25,7 @@ app.use("/api/follow", FollowRouter);
 app.use("/api/feed", FeedRouter);
 app.use("/api/comment", CommentRouter);
 app.use("/api/like", LikeRouter);
-app.use("/api/bookmark",BookmarkRouter)
+app.use("/api/bookmark", BookmarkRouter);
 
 // test koneksi supabase client
 app.get("/supabase-storage-test", async (req, res) => {
@@ -45,3 +47,5 @@ app.get("/supabase-storage-test", async (req, res) => {
 app.listen(port, () => {
   console.log(`berjalan d http://localhost:${port}`);
 });
+
+export default app;
