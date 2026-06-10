@@ -1,3 +1,4 @@
+
 import jwt from "jsonwebtoken";
 import { prisma } from "../lib/prisma.js";
 
@@ -13,7 +14,7 @@ export const AuthMiddleware = async (req, res, next) => {
       });
     }
 
-    // index 0 = Bearer, index 1 = tokennya  Bearer 6tgvgy
+    // index 0 = Bearer, index 1 = tokennya  constoh: Bearer 6tgvgy
     const token = header.split("Bearer ")[1];
     // console.log(token);
     const decoded = jwt.verify(token, jwtSecret);

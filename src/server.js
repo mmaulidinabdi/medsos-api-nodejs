@@ -16,7 +16,7 @@ app.use(cors());
 app.use(express.json());
 
 app.get("/", (req, res) => {
-  res.json({ msg: "test" });
+  res.json({ msg: "test woilah" });
 });
 
 app.use("/api/auth", AuthRouter);
