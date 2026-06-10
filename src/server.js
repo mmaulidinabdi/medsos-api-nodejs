@@ -16,7 +16,7 @@ app.use(cors());
 app.use(express.json());
 
 app.get("/", (req, res) => {
-  res.json({ msg: "test woilah" });
+  res.json({ msg: "test" });
 });
 
 app.use("/api/auth", AuthRouter);
@@ -30,7 +30,7 @@ app.use("/api/bookmark", BookmarkRouter);
 // test koneksi supabase client
 app.get("/supabase-storage-test", async (req, res) => {
   const { data, error } = await supabase.storage.listBuckets();
-
+  console.log(error)
   if (error) {
     return res.status(500).json({
       status: "FAILED",
@@ -38,6 +38,7 @@ app.get("/supabase-storage-test", async (req, res) => {
     });
   }
 
+  
   res.json({
     status: "OK",
     buckets: data.map((b) => b.name),
